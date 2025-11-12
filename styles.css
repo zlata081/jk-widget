@@ -1,0 +1,180 @@
+body {
+  color: #000;
+  font-family: Arial, sans-serif;
+  background-color: #fff;
+}
+
+h2, h3, label {
+  color: #222;
+  margin-bottom: 5px;
+}
+
+/* Оверлей */
+.modal-backdrop {
+  position: fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background: rgba(0,0,0,0.3);
+  z-index: 999;
+  display: none;
+  cursor: pointer;
+}
+
+/* Модалка */
+.modal {
+  position: fixed;
+  top:50%;
+  left:50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  border: 1px solid #ccc;
+  padding: 20px;
+  width: 600px;
+  max-height: 90%;
+  overflow-y: auto;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+  display: none;
+}
+
+/* Фильтры */
+#filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+#filters label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.9rem;
+}
+
+/* Мини-шахматка */
+/* Мини-шахматка */
+.floor-row {
+  display: flex;
+  margin-bottom: 5px;
+  align-items: stretch; 
+}
+
+.empty-state {
+  padding: 10px;
+  border: 1px dashed #bbb;
+  border-radius: 6px;
+  background: #fcfcfc;
+  color: #444;
+  font-size: 0.95rem;
+}
+
+.cell {
+  border: 1px solid #999;
+  padding: 5px;
+  margin-right: 5px;
+  margin-bottom: 5px;
+  cursor: pointer;
+  min-width: 60px;
+  text-align: center;
+  border-radius: 4px;
+  font-weight: bold;
+  color: #000;
+  display: flex; 
+  flex-direction: column; 
+  justify-content: space-between; 
+}
+.cell:hover { box-shadow: 0 0 5px #888; }
+
+.cell .cell-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.cell:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.cell .badge {
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid #ddd;
+}
+
+.cell .cell-main {
+  display: flex;
+  gap: 6px;
+  align-items: baseline;
+}
+
+.cell .cell-main strong {
+  font-weight: 700;
+}
+
+.cell .cell-price {
+  margin-top: 4px;
+  font-size: 0.9rem;
+}
+
+.cell.status-Sold {
+  cursor: default;
+  filter: grayscale(0.2);
+}
+
+.cell.status-ForSale { background-color: #d4edda; }     /* В продаже */
+.cell.status-Reserved { background-color: #fff3cd; }    /* Бронь */
+.cell.status-Sold { background-color: #e2e3e5; color: #888; } /* Продано */
+
+/* Детальная карточка и сообщение */
+#detail-panel {
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background-color: #fafafa;
+}
+#message-panel textarea {
+  width: 100%;
+  resize: none;
+  padding: 5px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-family: Arial, sans-serif;
+ color: #000 !important;
+  background: #fff !important;
+}
+#message-panel textarea::placeholder { color: #666; }
+
+/* Кнопки */
+button {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 5px 10px;
+  border: 1px solid #ccc;
+  background-color: #f5f5f5;
+  color: #000000;
+  transition: 0.2s;
+}
+button:hover { background-color: #e0e0e0; }
+
+/* Адаптивность */
+@media (max-width: 600px) {
+  #filters { flex-direction: column; }
+  .floor-row { flex-wrap: wrap; }
+  .cell { min-width: 50px; padding: 4px; font-size: 0.85rem; }
+}
+
+/* Дополнительное улучшение визуала */
+.cell.status-ForSale { border-color: #a7d7b0; }     /* В продаже */
+.cell.status-Reserved { border-color: #e6d68a; }    /* Бронь */
+.cell.status-Sold {
+  border-color: #c9cbce; 
+  cursor: default; 
+  filter: grayscale(0.2);
+}

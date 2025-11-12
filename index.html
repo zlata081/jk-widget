@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Виджет ЖК</title>
+  <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@1.*/css/pico.min.css" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="widget-container">
+    <button id="open-widget">Открыть виджет</button>
+
+    <!-- Оверлей -->
+    <div id="modal-backdrop" class="modal-backdrop"></div>
+
+    <!-- Модалка с двумя шагами -->
+    <div id="modal" class="modal">
+
+      <!-- Шаг 1: Подбор квартиры -->
+      <div id="step-1">
+        <h2>1. Подбор квартиры</h2>
+        <div id="filters">
+          <label>ЖК
+            <select id="filter-complex">
+              <option value="">Все</option>
+            </select>
+          </label>
+
+          <label>Корпус
+            <input type="text" id="filter-building" placeholder="например: 1" />
+          </label>
+
+          <label>Этаж
+            <input type="number" id="filter-floor" placeholder="Все" />
+          </label>
+
+          <label>Комнатность
+            <input type="number" id="filter-rooms" placeholder="Все" />
+          </label>
+
+          <label>Статус
+            <select id="filter-status">
+              <option value="">Все</option>
+              <option value="В продаже">В продаже</option>
+              <option value="Бронь">Бронь</option>
+              <option value="Продано">Продано</option>
+            </select>
+          </label>
+
+          <label>Мин. цена
+            <input type="number" id="filter-min-price" placeholder="0" />
+          </label>
+
+          <label>Макс. цена
+            <input type="number" id="filter-max-price" placeholder="∞" />
+          </label>
+
+          <button id="filter-onsale" type="button">Показать только "В продаже"</button>
+          <button id="apply-filters" type="button">Применить фильтры</button>
+        </div>
+
+        <div id="grid"></div>
+        <button id="next-step" style="margin-top:10px;">Следующий шаг</button>
+      </div>
+
+      <!-- Шаг 2: Предпросмотр и отправка -->
+      <div id="step-2" style="display:none;">
+        <h2>2. Предпросмотр сообщения</h2>
+        <div id="detail-panel"></div>
+
+        <div id="message-panel">
+          <textarea id="message-text" rows="8" style="width:100%;"></textarea>
+          <div style="margin-top:5px;">
+            <button id="send-whatsapp">WhatsApp</button>
+            <button id="send-telegram">Telegram</button>
+            <button id="send-email">Email</button>
+            <button id="copy-text">Копировать</button>
+          </div>
+        </div>
+
+        <button id="back-step" style="margin-top:10px;">Назад</button>
+        <button class="close-modal" style="margin-top:10px;">Закрыть</button>
+      </div> <!-- /#step-2 -->
+
+    </div>   <!-- /#modal -->
+  </div>     <!-- /#widget-container -->
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="widget.js"></script>
+  <script src="index.js"></script>
+</body>
+</html>
