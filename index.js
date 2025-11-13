@@ -1,122 +1,77 @@
-// ==== API и кеш ====
-const API_BASE = '/api/v4'; // надёжнее, чем просто '/api/v4'
+// ======================================================
+// 1. DEMO-ДАННЫЕ (вместо загрузки из amoCRM)
+// ======================================================
 
-const CATALOGS = { apartmentsId: 9973 };
-
-const cache = {
-  get(key) {
-    try {
-      const raw = localStorage.getItem(key);
-      if (!raw) return null;
-      const { val, exp } = JSON.parse(raw);
-      if (exp && Date.now() > exp) { localStorage.removeItem(key); return null; }
-      return val;
-    } catch { return null; }
+const DEMO_APARTMENTS = [
+  {
+    id: 1,
+    complex: 'ЖК Солнечный',
+    building: '1',
+    floor: 5,
+    rooms: 1,
+    area: 32,
+    total_price: 4_500_000,
+    status: 'В продаже',
+    plan_url: '',
+    presentation_url: '',
   },
-  set(key, val, ttlMs) {
-    localStorage.setItem(key, JSON.stringify({ val, exp: Date.now() + ttlMs }));
+  {
+    id: 2,
+    complex: 'ЖК Солнечный',
+    building: '1',
+    floor: 5,
+    rooms: 2,
+    area: 48,
+    total_price: 6_200_000,
+    status: 'Бронь',
+    plan_url: '',
+    presentation_url: '',
+  },
+  {
+    id: 3,
+    complex: 'ЖК Северный',
+    building: '2',
+    floor: 10,
+    rooms: 3,
+    area: 75,
+    total_price: 9_500_000,
+    status: 'Продано',
+    plan_url: '',
+    presentation_url: '',
+  },
+  {
+    id: 4,
+    complex: 'ЖК Северный',
+    building: '2',
+    floor: 7,
+    rooms: 2,
+    area: 55,
+    total_price: 7_300_000,
+    status: 'В продаже',
+    plan_url: '',
+    presentation_url: '',
   }
-};
+];
 
-async function http(url) {
-  const res = await fetch(url, { credentials: 'include' }); // важна авторизация amoCRM
-  if (!res.ok) throw new Error(`HTTP ${res.status} at ${url}`);
-  return res.json();
-}
-
-async function getCatalogElements(catalogId, page = 1, limit = 250) {
-  const u = new URL(`${API_BASE}/catalogs/${catalogId}/elements`);
-  u.searchParams.set('page', String(page));
-  u.searchParams.set('limit', String(limit));
-  return http(u.toString());
-}
-
-// ==== Полезные функции ====
-function cf(el, codeOrName) {
-  const arr = el.custom_fields_values || [];
-  const f = arr.find(x =>
-    x.field_code === codeOrName ||
-    x.field_name === codeOrName ||
-    x.code === codeOrName ||
-    x.name === codeOrName
-  );
-  return f?.values?.[0]?.value ?? undefined;
-}
-
-function mapApartmentFromProduct(el) {
-  return {
-    id: el.id,
-    complex: cf(el, 'complex') || '',     // строковое название ЖК
-    complex_id: undefined,                // отдельного каталога ЖК нет — оставим undefined
-    building: cf(el, 'building'),
-    floor: Number(cf(el, 'floor')),
-    rooms: Number(cf(el, 'rooms')),
-    area: Number(cf(el, 'area')),
-    total_price: Number(cf(el, 'total_price') ?? cf(el, 'totalprice') ?? el.price ?? 0),
-    status: cf(el, 'status') || 'В продаже',
-    plan_url: cf(el, 'plan_url') || cf(el, 'planurl'),
-    presentation_url: cf(el, 'presentation_url') || cf(el, 'presentationurl'),
-    image: cf(el, 'image'),
-  };
-}
-
-async function getLead(leadId) {
-  if (!leadId) return null;
-  try {
-    return await http(`${API_BASE}/leads/${leadId}`);
-  } catch {
-    return null;
-  }
-}
-
-async function getLeadLinkedProducts(leadId) {
-  if (!leadId) return [];
-  const u = new URL(`${API_BASE}/leads/${leadId}/links`);
-  u.searchParams.set('limit', '250');
-  const data = await http(u.toString());
-  const links = data?._embedded?.links || [];
-  return links
-    .filter(l => l.to_entity_type === 'catalog_elements')
-    .map(l => l.to_entity_id);
-}
-
-// автофильтры из сделки (по ТЗ)
-function extractLeadAutoFilters(lead) {
-  if (!lead) return { district: undefined, rooms: undefined, budget: undefined };
-  const getCF = (code) =>
-    (lead.custom_fields_values || []).find(f => f.field_code === code || f.field_name === code)?.values?.[0]?.value;
-
-  const district = getCF('cf_preferred_district');
-  const rooms = Number(getCF('cf_preferred_rooms') || 0) || undefined;
-  const budget = Number(getCF('cf_client_budget') || 0) || undefined;
-
-  return { district, rooms, budget };
-}
-
-function withinBudget(total, budget) {
-  if (!budget) return true;
-  return total >= budget * 0.85 && total <= budget * 1.15;
-}
-
+// вместо API — просто возвращаем DEMO-данные
 async function loadApartmentsFromProducts() {
-  const cacheKey = 'cache:products_apartments';
-  const cached = cache.get(cacheKey);
-  if (cached) return cached;
-
-  const out = [];
-  let page = 1;
-  while (true) {
-    const res = await getCatalogElements(CATALOGS.apartmentsId, page, 250);
-    const items = (res._embedded?.elements || []).map(mapApartmentFromProduct);
-    out.push(...items);
-    if (!res._links?.next) break;
-    page += 1;
-  }
-  cache.set(cacheKey, out, 30 * 60 * 1000); // 30 минут
-  return out;
+  return DEMO_APARTMENTS;
 }
 
-// ==== Шаблонизатор и утилиты UI ====
+// автофильтры от сделки нам пока не нужны — вернём пустые
+function extractLeadAutoFilters() {
+  return { district: undefined, rooms: undefined, budget: undefined };
+}
+
+// бюджет также не используется, но оставим функцию на будущее
+function withinBudget(total, budget) {
+  return true;
+}
+
+// ======================================================
+// 2. Шаблонизатор и утилиты UI
+// ======================================================
+
 function statusClass(status) {
   switch ((status || '').toLowerCase()) {
     case 'в продаже': return 'ForSale';
@@ -126,6 +81,7 @@ function statusClass(status) {
   }
 }
 
+// простой шаблонизатор {{a.b.c}} + зачистка пустых строк
 function renderTemplate(tpl, ctx) {
   const out = tpl.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_, path) => {
     const val = path.split('.').reduce((acc, p) => (acc ? acc[p] : undefined), ctx);
@@ -138,56 +94,43 @@ function renderTemplate(tpl, ctx) {
     .join('\n');
 }
 
-// ==== Глобальные ====
-let amoData = {};
-window.amocrmWidgets = window.amocrmWidgets || {};
-amocrmWidgets.zhkwidget = {
-  init: function (params) {
-    amoData = params;
-    console.log("Виджет запущен", amoData);
-    const leadId = amoData.entity_id;
-    console.log("Текущая сделка:", leadId);
-  }
-};
+// ======================================================
+// 3. Глобальные переменные и DOM
+// ======================================================
 
-// Заглушки для ТЗ (контакт/менеджер)
+// Заглушки (в реальной интеграции сюда подставятся данные контакта и менеджера)
 const contactName = "Иван Иванов";
 const userName = "Менеджер";
 
-// DOM
+// DOM элементы
 const modal = document.getElementById("modal");
 const backdrop = document.getElementById("modal-backdrop");
 const step1 = document.getElementById("step-1");
 const step2 = document.getElementById("step-2");
 
-// ==== Открытие модалки ====
+// чтобы в других местах понимать, что сейчас выбрано
+window.__lastSelected = null;
+window.__DATA__ = null;
+
+// ======================================================
+// 4. Открытие модалки и начальная загрузка
+// ======================================================
+
 document.getElementById("open-widget").addEventListener("click", async () => {
   modal.style.display = "block";
   backdrop.style.display = "block";
 
   try {
-    const leadId = window.CURRENT_LEAD_ID || amoData?.entity_id;
-    const [apts, lead, linkedIds] = await Promise.all([
-      loadApartmentsFromProducts(),
-      getLead(leadId),
-      getLeadLinkedProducts(leadId)
-    ]);
+    // грузим демо-квартиры
+    const apts = await loadApartmentsFromProducts();
 
-    // приоритизируем связанные с сделкой элементы
-    if (linkedIds?.length) {
-      apts.sort(
-        (a, b) =>
-          (linkedIds.includes(a.id) ? -1 : 0) - (linkedIds.includes(b.id) ? -1 : 0)
-      );
-    }
-
-    // список ЖК из строкового поля complex
+    // список ЖК
     const complexes = Array.from(new Set(apts.map(a => a.complex).filter(Boolean))).sort();
 
-    // автофильтры
-    const auto = extractLeadAutoFilters(lead);
+    // автофильтры (пока пустые)
+    const auto = extractLeadAutoFilters(null);
 
-    // rooms + бюджет ±15%
+    // rooms + бюджет (по факту сейчас НЕ режут ничего, но логика есть)
     let filtered = apts.filter(a => {
       const okRooms = auto.rooms ? (Number(a.rooms) === Number(auto.rooms)) : true;
       const okBudget = withinBudget(Number(a.total_price || 0), auto.budget);
@@ -210,7 +153,7 @@ document.getElementById("open-widget").addEventListener("click", async () => {
     window.__DATA__ = { apts, complexes, auto };
   } catch (e) {
     console.error(e);
-    alert('Ошибка загрузки данных из каталога. Проверьте права доступа и ID каталога (9973).');
+    alert('Ошибка загрузки данных. Для демо используем статичный список квартир.');
   }
 });
 
@@ -225,9 +168,15 @@ function populateComplexDropdownFromList(complexNames){
   });
 }
 
-// ==== Закрытие/переходы ====
-document.querySelectorAll(".close-modal").forEach(btn => btn.addEventListener("click", closeModal));
+// ======================================================
+// 5. Закрытие модалки и переходы между шагами
+// ======================================================
+
+document.querySelectorAll(".close-modal")
+  .forEach(btn => btn.addEventListener("click", closeModal));
+
 backdrop.addEventListener("click", closeModal);
+
 function closeModal() {
   modal.style.display = "none";
   backdrop.style.display = "none";
@@ -237,17 +186,27 @@ document.getElementById("next-step").addEventListener("click", ()=>{
   step1.style.display = "none";
   step2.style.display = "block";
 });
+
 document.getElementById("back-step").addEventListener("click", ()=>{
   step2.style.display = "none";
   step1.style.display = "block";
 });
 
-// ==== Мини-шахматка ====
+// ======================================================
+// 6. Мини-шахматка
+// ======================================================
+
 function renderGrid(apts){
   const grid = document.getElementById("grid");
   grid.innerHTML = "";
 
-  const floors = [...new Set(apts.map(a => a.floor).filter(f => Number.isFinite(f)))].sort((a, b) => b - a);
+  if (!apts.length) {
+    grid.innerHTML = '<div class="empty-state">Нет квартир для отображения.</div>';
+    return;
+  }
+
+  const floors = [...new Set(apts.map(a => a.floor).filter(f => Number.isFinite(f)))]
+    .sort((a, b) => b - a); // сверху — верхние этажи
 
   floors.forEach(floor => {
     const row = document.createElement("div");
@@ -285,7 +244,10 @@ function renderGrid(apts){
   });
 }
 
-// ==== Детальная карточка и сообщение ====
+// ======================================================
+// 7. Детальная карточка и формирование текста
+// ======================================================
+
 function showApartmentDetail(a){
   const panel = document.getElementById("detail-panel");
   panel.innerHTML = `
@@ -343,67 +305,41 @@ function showApartmentDetail(a){
   };
 }
 
-// ==== Примечание в таймлайне ====
-async function tryCreateNote(channel, lot) {
-  const leadId = window.CURRENT_LEAD_ID || amoData?.entity_id;
-  if (!leadId) return;
+// ======================================================
+// 8. Кнопки отправки (WhatsApp / Telegram / Email / Копировать)
+// ======================================================
 
-  const text = `Отправлена презентация по квартире (ЖК "${lot.complex || '—'}", корп. ${lot.building ?? '—'}, этаж ${lot.floor ?? '—'}) через ${channel}.`;
-
-  try {
-    const body = [{
-      note_type: "common",
-      params: { text }
-    }];
-
-    const res = await fetch(`${API_BASE}/leads/${leadId}/notes`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-
-    if (!res.ok) throw new Error(`Notes HTTP ${res.status}`);
-    console.log('Примечание создано');
-  } catch (e) {
-    console.warn('Не удалось создать примечание фронтом:', e);
-    try {
-      await navigator.clipboard.writeText(text);
-      alert('Не удалось создать примечание автоматически. Текст скопирован в буфер — вставьте в таймлайн сделки.');
-    } catch {
-      alert('Не удалось создать примечание. Скопируйте вручную:\n\n' + text);
-    }
-  }
-}
-
-// ==== Кнопки действий ====
 document.getElementById("copy-text").addEventListener("click", async ()=>{
-  const text=document.getElementById("message-text").value;
-  await navigator.clipboard.writeText(text);
-  alert("Скопировано!");
-  if (window.__lastSelected?.apartment) await tryCreateNote('Копирование', window.__lastSelected.apartment);
+  const text = document.getElementById("message-text").value;
+  try {
+    await navigator.clipboard.writeText(text);
+    alert("Скопировано!");
+  } catch {
+    alert("Не удалось скопировать автоматически, скопируйте текст вручную.");
+  }
 });
 
-document.getElementById("send-whatsapp").addEventListener("click", async ()=>{
-  const text=encodeURIComponent(document.getElementById("message-text").value);
+document.getElementById("send-whatsapp").addEventListener("click", ()=>{
+  const text = encodeURIComponent(document.getElementById("message-text").value);
   window.open(`https://wa.me/?text=${text}`,"_blank");
-  if (window.__lastSelected?.apartment) await tryCreateNote('WhatsApp', window.__lastSelected.apartment);
 });
 
-document.getElementById("send-telegram").addEventListener("click", async ()=>{
-  const text=encodeURIComponent(document.getElementById("message-text").value);
+document.getElementById("send-telegram").addEventListener("click", ()=>{
+  const text = encodeURIComponent(document.getElementById("message-text").value);
   window.open(`https://t.me/share/url?url=&text=${text}`,"_blank");
-  if (window.__lastSelected?.apartment) await tryCreateNote('Telegram', window.__lastSelected.apartment);
 });
 
-document.getElementById("send-email").addEventListener("click", async ()=>{
+document.getElementById("send-email").addEventListener("click", ()=>{
   const text = encodeURIComponent(document.getElementById("message-text").value);
   const ctx = window.__lastSelected || {};
   const subjectTpl = 'ЖК {{complex.name}} — предложение по квартире, {{apartment.rooms}} к., {{apartment.area}} м²';
   const subject = renderTemplate(subjectTpl, ctx);
   window.open(`mailto:?subject=${encodeURIComponent(subject)}&body=${text}`);
-  if (window.__lastSelected?.apartment) await tryCreateNote('Email', window.__lastSelected.apartment);
 });
+
+// ======================================================
+// 9. Фильтры
+// ======================================================
 
 // Быстрая кнопка «В продаже»
 const btnOnSale = document.getElementById("filter-onsale");
@@ -436,15 +372,7 @@ document.getElementById("apply-filters").addEventListener("click", ()=>{
   filtered = filtered.filter(a => (a.total_price || 0) >= minPrice && (a.total_price || 0) <= maxPrice);
 
   renderGrid(filtered);
-  if (filtered.length>0) showApartmentDetail(filtered[0]);
+  if (filtered.length > 0) showApartmentDetail(filtered[0]);
   else document.getElementById('detail-panel').innerHTML =
     '<div class="empty-state">Нет подходящих помещений. Измените фильтры.</div>';
-});
-
-// Событие открытия из кнопки в карточке сделки (widget.js)
-window.addEventListener('jk:open', (e) => {
-  if (e && e.detail && e.detail.leadId) {
-    window.CURRENT_LEAD_ID = e.detail.leadId;
-  }
-  document.getElementById("open-widget").click();
 });
