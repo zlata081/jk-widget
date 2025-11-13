@@ -53,24 +53,43 @@ const DEMO_APARTMENTS = [
   }
 ];
 
-// вместо API — просто возвращаем DEMO-данные
+
+const DEMO_LEAD = {
+  custom_fields_values: [
+    { field_code: "cf_preferred_rooms", values: [{ value: 2 }] },   // клиент хочет 2к
+    { field_code: "cf_client_budget",   values: [{ value: 9000000 }] } // бюджет 9 млн
+  ]
+};
+
+
 async function loadApartmentsFromProducts() {
   return DEMO_APARTMENTS;
 }
 
-// автофильтры от сделки нам пока не нужны — вернём пустые
-function extractLeadAutoFilters() {
-  return { district: undefined, rooms: undefined, budget: undefined };
+
+// автофильтры из "сделки" (для демо используем DEMO_LEAD)
+function extractLeadAutoFilters(lead) {
+  if (!lead) return { district: undefined, rooms: undefined, budget: undefined };
+
+  const getCF = (code) =>
+    (lead.custom_fields_values || []).find(
+      f => f.field_code === code || f.field_name === code
+    )?.values?.[0]?.value;
+
+  const district = getCF('cf_preferred_district');
+  const rooms   = Number(getCF('cf_preferred_rooms') || 0) || undefined;
+  const budget  = Number(getCF('cf_client_budget')   || 0) || undefined;
+
+  return { district, rooms, budget };
 }
 
-// бюджет также не используется, но оставим функцию на будущее
+
 function withinBudget(total, budget) {
-  return true;
+  if (!budget) return true; // если бюджета нет — не фильтруем
+  return total >= budget * 0.85 && total <= budget * 1.15;
 }
 
-// ======================================================
-// 2. Шаблонизатор и утилиты UI
-// ======================================================
+
 
 function statusClass(status) {
   switch ((status || '').toLowerCase()) {
@@ -94,11 +113,7 @@ function renderTemplate(tpl, ctx) {
     .join('\n');
 }
 
-// ======================================================
-// 3. Глобальные переменные и DOM
-// ======================================================
 
-// Заглушки (в реальной интеграции сюда подставятся данные контакта и менеджера)
 const contactName = "Иван Иванов";
 const userName = "Менеджер";
 
@@ -108,13 +123,11 @@ const backdrop = document.getElementById("modal-backdrop");
 const step1 = document.getElementById("step-1");
 const step2 = document.getElementById("step-2");
 
-// чтобы в других местах понимать, что сейчас выбрано
+
 window.__lastSelected = null;
 window.__DATA__ = null;
 
-// ======================================================
-// 4. Открытие модалки и начальная загрузка
-// ======================================================
+
 
 document.getElementById("open-widget").addEventListener("click", async () => {
   modal.style.display = "block";
@@ -127,10 +140,10 @@ document.getElementById("open-widget").addEventListener("click", async () => {
     // список ЖК
     const complexes = Array.from(new Set(apts.map(a => a.complex).filter(Boolean))).sort();
 
-    // автофильтры (пока пустые)
-    const auto = extractLeadAutoFilters(null);
+    // автофильтры 
+    const auto = extractLeadAutoFilters(DEMO_LEAD);
 
-    // rooms + бюджет (по факту сейчас НЕ режут ничего, но логика есть)
+    // rooms + бюджет 
     let filtered = apts.filter(a => {
       const okRooms = auto.rooms ? (Number(a.rooms) === Number(auto.rooms)) : true;
       const okBudget = withinBudget(Number(a.total_price || 0), auto.budget);
@@ -244,9 +257,7 @@ function renderGrid(apts){
   });
 }
 
-// ======================================================
-// 7. Детальная карточка и формирование текста
-// ======================================================
+
 
 function showApartmentDetail(a){
   const panel = document.getElementById("detail-panel");
@@ -376,3 +387,4 @@ document.getElementById("apply-filters").addEventListener("click", ()=>{
   else document.getElementById('detail-panel').innerHTML =
     '<div class="empty-state">Нет подходящих помещений. Измените фильтры.</div>';
 });
+
