@@ -56,8 +56,8 @@ const DEMO_APARTMENTS = [
 
 const DEMO_LEAD = {
   custom_fields_values: [
-    { field_code: "cf_preferred_rooms", values: [{ value: 2 }] },   // клиент хочет 2к
-    { field_code: "cf_client_budget",   values: [{ value: 9000000 }] } // бюджет 9 млн
+    { field_code: "cf_preferred_rooms", values: [{ value: 2 }] },   
+    { field_code: "cf_client_budget",   values: [{ value: 7000000 }] } 
   ]
 };
 
@@ -387,4 +387,5 @@ document.getElementById("apply-filters").addEventListener("click", ()=>{
   else document.getElementById('detail-panel').innerHTML =
     '<div class="empty-state">Нет подходящих помещений. Измените фильтры.</div>';
 });
+
 
